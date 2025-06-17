@@ -1,9 +1,13 @@
 import { io } from 'socket.io-client';
+import Cookies from 'js-cookie';
 
-const URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const URL = 'http://localhost:8080';
 
 const socket = io(URL, {
-    withCredentials: true,
+    extraHeaders: {
+        'Authorization': `Bearer ${Cookies.get('token')}`,
+    },
+    withCredentials: false
 });
 
 socket.on('connect', () => {

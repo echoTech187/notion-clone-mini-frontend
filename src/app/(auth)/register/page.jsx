@@ -1,90 +1,66 @@
-// 'use client' karena ini adalah Client Component yang membutuhkan interaktivitas
-'use client';
+"use client";
+import React, { useState } from 'react';
+import AuthForm from '../../../components/AuthForm';
+import Layout from '../../../components/Layout'; // Import Layout component
+import { useAuth } from '../../../context/AuthContext';
+import Link from 'next/link';
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation'; // Menggunakan useRouter dari next/navigation
-import Link from 'next/link'; // Menggunakan Link dari next/link
-import { useAuth } from '@/context/AuthContext';
-
-export default function RegisterPage() {
-    const { register: registerUser, handleSubmit, formState: { errors } } = useForm();
-    const router = useRouter();
+const RegisterPage = () => {
     const { register } = useAuth();
+    const [errorMessage, setErrorMessage] = useState('');
 
-    const onSubmit = async (data) => {
-        const result = await register(data.username, data.password);
-        if (result.success) {
-            router.push('/notes');
-        } else {
-            alert(result.message);
+    const handleRegister = async ({ username, email, password }) => {
+        setErrorMessage('');
+        const result = await register(username, email, password);
+        if (!result.success) {
+            setErrorMessage(result.message);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 min-w-screen md:min-w-md lg:min-w-md xl:min-w-md">
-            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-                <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Daftar</h2>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="mb-4">
-                        <label htmlFor="name" className="block text-gray-700">
-                            Nama Lengkap
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            {...registerUser("name", { required: true })}
-                            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${errors.name ? 'border-red-500' : ''}`}
-                        />
+        // Layout component without sidebar for auth pages
+        <Layout title="Register" showSidebar={false}>
+            <div className="flex flex-col lg:flex-row min-h-screen bg-white">
+                {/* Left Section (Illustration) */}
+                <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-8 bg-blue-50 relative overflow-hidden">
+                    {/* Add your illustration SVG or image here */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-50 opacity-80"></div>
+                    <div className="relative z-10 text-center">
+                        <h1 className="text-4xl font-bold mb-4">Permudah interaksi antar <span className="text-yellow-600">Dosen</span> dan <span className="text-yellow-600">Mahasiswa</span> secara online!</h1>
+                        {/* You can add your illustration image here, ensure it's in public folder */}
+                        <img src="/illustrations/login-illustration.png" alt="Interaction Illustration" className="mt-8 max-w-lg mx-auto" />
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="email" className="block text-gray-700">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            {...registerUser("email", { required: true })}
-                            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${errors.email ? 'border-red-500' : ''}`}
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label htmlFor="password" className="block text-gray-700">
-                            Sandi
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            {...registerUser("password", { required: true })}
-                            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${errors.password ? 'border-red-500' : ''}`}
+                </div>
 
-                        />
+                {/* Right Section (Register Form) */}
+                <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
+                    <div className="bg-white p-6 sm:p-8 rounded-lg w-full max-w-md">
+                        <div className="text-center mb-6">
+                            {/* Logo */}
+                            <div className="flex justify-center items-center mb-4">
+                                <span className="text-3xl font-bold text-blue-600">NotionCloneMini</span>
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                Daftar Akun Baru
+                            </h2>
+                            <p className="text-gray-600 text-sm">
+                                Sudah punya akun?{' '}
+                                <Link href="/login" className="text-blue-600 hover:underline">
+                                    Login
+                                </Link>
+                            </p>
+                        </div>
+                        {errorMessage && <p className="text-red-500 text-center text-sm mb-4">{errorMessage}</p>}
+
+                        {/* AuthForm component for the register logic */}
+                        <AuthForm type="register" onSubmit={handleRegister} />
+
+
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="confirmPassword" className="block text-gray-700">
-                            Konfirmasi Sandi
-                        </label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            {...registerUser("confirmPassword", { required: true })}
-                            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    >
-                        Daftar
-                    </button>
-                </form>
-                <p className="mt-4 inline-block align-baseline font-bold text-sm text-gray-500">
-                    Sudah punya akun?{" "}
-                    <Link href="/login" className="text-blue-500 hover:underline">
-                        Masuk
-                    </Link>
-                </p>
+                </div>
             </div>
-        </div>
+        </Layout>
     );
-}
+};
+
+export default RegisterPage;

@@ -33,7 +33,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/app/pages/login/page.js"
+    "**/*.js",
+    "/**/*.jsx",
+    "src/app/pages/login/page.js",
+    "next.config.mjs",
+    "src/app/(note)/preview/[id]/page.jsx",
+    "src/app/(note)/preview/[id]/page.jsx"
   ],
   "exclude": [
     "node_modules"

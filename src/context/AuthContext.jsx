@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../app/api/axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
@@ -11,46 +11,47 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const loadUser = useCallback(async () => {
+        try {
+            const token = Cookies.get('token');
+            if (token) {
+                localStorage.setItem('jwtToken', token);
 
-    useEffect(() => {
-        const loadUser = async () => {
-            try {
-                const token = Cookies.get('token');
-                if (token) {
-                    localStorage.setItem('jwtToken', token);
-
-                } else {
-                    localStorage.removeItem('jwtToken');
-                    setLoading(false);
-                    return;
+            } else {
+                localStorage.removeItem('jwtToken');
+                setLoading(false);
+                return;
+            }
+            const res = await api.get('/auth/me', {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+                    'Authorization': `Bearer ${token}`
                 }
-                const res = await api.get('/auth/me', {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (res.success) {
-                    setUser(res.data);
-                } else {
-                    setUser(null);
-                    localStorage.removeItem('jwtToken');
-                }
-            } catch (err) {
-                console.error('Error loading user:', err);
+            });
+            if (res.data.success) {
+                setUser(res.data.data);
+                localStorage.setItem('jwtToken', res.data.token);
+                Cookies.set('token', res.data.token);
+                router.push('/dashboard');
+            } else {
                 setUser(null);
                 localStorage.removeItem('jwtToken');
-                router.push('/login');
-            } finally {
-                setLoading(false);
             }
-        };
-
+        } catch (err) {
+            console.error('Error loading user:', err);
+            setUser(null);
+            localStorage.removeItem('jwtToken');
+            router.push('/login');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+    useEffect(() => {
         loadUser();
-    }, [router]);
+    }, [loadUser]);
 
     const login = async (email, password) => {
         try {
@@ -70,6 +71,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(res.data.user);
                 Cookies.set('token', res.data.token);
                 localStorage.setItem('jwtToken', res.data.token);
+                router.push('/dashboard');
                 return { success: true };
             }
             return { success: false, message: 'Login gagal.' };
@@ -83,8 +85,8 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/register', { username, email, password });
             if (res.data.success) {
-                setUser(res.data.user);
-                localStorage.setItem('jwtToken', res.data.token);
+                router.push('/login');
+
                 return { success: true };
             }
             return { success: false, message: 'Registrasi gagal.' };
@@ -103,6 +105,8 @@ export const AuthProvider = ({ children }) => {
             });
             setUser(null);
             localStorage.removeItem('jwtToken');
+            Cookies.remove('token');
+            router.push('/login');
             return { success: true };
         } catch (err) {
             console.error('Logout error:', err.response?.data?.message || err.message);
@@ -111,7 +115,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, register, logout, loadUser }}>
             {children}
         </AuthContext.Provider>
     );
