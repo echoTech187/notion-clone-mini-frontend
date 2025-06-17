@@ -96,6 +96,7 @@ exports.me = asyncHandler(async (req, res) => {
         const user = req.user;
         return res.status(200).json({
             success: user ? true : false,
+            token: getSignedJwtToken(user._id),
             data: {
                 id: user.key,
                 name: user.username,

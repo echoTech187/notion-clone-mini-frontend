@@ -15,6 +15,6 @@ router
     .delete(middleware.protect, noteController.deleteNote);
 
 router.route('/user/:userId').get(middleware.protect, noteController.getNotesByUser);
-router.get('/preview/:id', noteController.getNoteForPreview);
+
 
 module.exports = router;

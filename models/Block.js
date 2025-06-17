@@ -3,12 +3,14 @@ const { mongoose } = require('mongoose');
 const blockSchema = new mongoose.Schema({
     id: {
         type: String,
-        required: true
+        required: true,
+        unique: false
     },
     note_id: {
         type: mongoose.Schema.ObjectId,
         ref: 'Note',
-        required: true
+        required: true,
+        unique: false
     },
     parent_id: {
         type: String,
@@ -38,10 +40,6 @@ const blockSchema = new mongoose.Schema({
         default: Date.now
     }
 });
-
-blockSchema.index({ noteId: 1, orderIndex: 1 });
-
-blockSchema.index({ noteId: 1, blockId: 1 }, { unique: true });
 
 blockSchema.pre('save', function (next) {
     this.updateAt = Date.now();

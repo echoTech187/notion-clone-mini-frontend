@@ -5,6 +5,7 @@ const connectToMoongose = require('./config/database/mongooseDB');
 const dotenv = require('dotenv');
 const authRouter = require('./routes/authRouter');
 const noteRouter = require('./routes/noteRouter');
+const previewRouter = require('./routes/previewRouter');
 const middleware = require('./middleware/middleware');
 const http = require('http');
 const cookieParser = require('cookie-parser');
@@ -16,16 +17,24 @@ connectToMoongose();
 
 const server = http.createServer(app);
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' ? 'https://your-frontend-domain.com' : 'http://localhost:3000',
-    credentials: true,
+    origin: 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+    optionsSuccessStatus: 200,
+    preflightContinue: false,
+    exposedHeaders: 'Authorization',
+    maxAge: 3600,
+    transports: ['websocket', 'polling'],
+    path: '/socket.io',
+    serveClient: false,
+
 };
 const io = new Server(server, {
     cors: corsOptions,
 });
 
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
@@ -113,7 +122,31 @@ io.on('connection', (socket) => {
             console.log(error);
         }
     });
-    socket.on('disconnect', () => {
+    socket.on('noteDelete', async ({ noteId }) => {
+        if (!currentNoteId || currentNoteId !== noteId || !currentUserId) {
+            socket.emit('noteError', { message: 'Tidak memiliki izin atau catatan tidak ditemukan.' });
+            return;
+        }
+        try {
+            const note = await Note.findById(noteId).populate('lastEditedBy', 'username');
+            if (!note) {
+                socket.emit('noteError', { message: 'Catatan tidak ditemukan.' });
+                return;
+            }
+            if (note.user.toString() !== currentUserId) {
+                socket.emit('noteError', { message: 'Kamu tidak memiliki izin untuk menghapus catatan ini.' });
+                return;
+            }
+            await Block.deleteMany({ note_id: noteId });
+            await Note.findByIdAndDelete(noteId);
+            console.log(`User ${currentUserId} deleted note: ${noteId} (Socket ID: ${socket.id})`);
+            socket.to(noteId).emit('noteDeleted', noteId);
+        } catch (error) {
+            socket.emit('noteError', { message: 'Error deleting note.' });
+            console.log(error);
+        }
+    })
+    socket.on('onLeave', () => {
         if (currentNoteId) {
             socket.leave(currentNoteId);
         }
@@ -124,6 +157,7 @@ app.get('/', (req, res) => res.send('API running'));
 app.get('/api', (req, res) => res.send('API running'));
 app.use('/api/auth', authRouter);
 app.use('/api/notes', middleware.protect, noteRouter);
+app.use('/api/preview', previewRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

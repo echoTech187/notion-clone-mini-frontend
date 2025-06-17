@@ -37,7 +37,7 @@ exports.getNote = async (req, res) => {
         const blocks = await Block.find({ note_id: note[0]._id }).sort({ order_index: 1 }).select('-__v -_id -note_id');
         res.status(200).json({
             success: true,
-            data: note.toObject(),
+            data: note,
             content: reconstructBlocksForFrontend(blocks)
         });
     } catch (error) {
@@ -48,32 +48,33 @@ exports.getNote = async (req, res) => {
 
 exports.createNote = async (req, res) => {
     try {
-        const initialBlockData = {
-            noteId: note._id,
-            blockId: initialBlockId || 'default-initial-block', // Use ID from frontend or fallback
-            parentId: null,
-            type: 'paragraph',
-            content: [], // Empty content for a new paragraph
-            props: {}, // Default props
-            orderIndex: 0,
-            children: [], // No children initially
-        };
-
+        const { initialBlockId } = req.body; // Expect initialBlockId from frontend
         const newNote = new Note({
             id: require('uuid').v4(),
-            userId: req.user.id,
+            userId: req.user._id,
             title: req.body.title || 'Untitled',
-            lastEditedBy: req.user.id,
+            lastEditedBy: req.user._id,
             lastEditedAt: Date.now()
         });
         const note = await newNote.save();
         if (!note) {
             return res.status(404).json({ message: 'Note not created.' });
         }
+        const initialBlockData = {
+            note_id: note._id,
+            id: initialBlockId || 'default-initial-block', // Use ID from frontend or fallback
+            parent_id: null,
+            type: 'paragraph',
+            content: [], // Empty content for a new paragraph
+            props: {}, // Default props
+            order_index: 0,
+            children: [], // No children initially
+        };
+        console.log(initialBlockData);
         const initialBlock = await Block.create(initialBlockData);
-        await note.populate('lastEditedBy', 'username');
-
-        await Block.insertMany(blocksToUse.map((block, i) => ({ ...block, note_id: note._id, order_index: i, parent_id: null })));
+        if (!initialBlock) {
+            return res.status(404).json({ message: 'Initial block not created.' });
+        }
 
         res.status(200).json({
             success: true,
@@ -89,7 +90,8 @@ exports.createNote = async (req, res) => {
 
 exports.updateNote = async (req, res) => {
     try {
-        const { title, blocks } = req.body;
+        const { title, content } = req.body;
+        const blocks = content;
         let note = await Note.findById({ _id: req.params.id, userId: req.user.id }).populate('lastEditedBy', 'username');
 
         if (!note) {
@@ -99,18 +101,17 @@ exports.updateNote = async (req, res) => {
             res.status(401).json({ message: 'Anda tidak memiliki izin untuk mengedit catatan ini.' });
         }
         note.title = title !== undefined ? title : note.title;
-        note.lastEditedBy = req.user.username;
+        note.lastEditedBy = req.user.id;
         await note.save();
-
-
         if (blocks && blocks.length > 0) {
-            await Block.deleteMany({ noteId: note._id });
+            await Block.deleteMany({ note_id: note._id });
             const blocksToInsert = prepareBlocksForDB(blocks, note._id.toString());
             await Block.insertMany(blocksToInsert);
         }
-        const updatedBlocks = await Block.find({ noteId: note._id }).sort({ orderIndex: 1 });
+        const updatedBlocks = await Block.find({ note_id: note._id }).sort({ orderIndex: 1 });
         req.io.to(note._id.toString()).emit('note_updated', {
-            noteId: note._id.toString(),
+
+            note_id: note._id.toString(),
             updatedNote: {
                 _id: note._id,
                 title: note.title,
@@ -164,13 +165,13 @@ exports.deleteNote = async (req, res) => {
 
 exports.getNoteForPreview = async (req, res) => {
     try {
-        const note = await Note.findById(req.params.id).select('-userId'); // Don't expose userId
+        const note = await Note.findById(req.params.id).select('-userId').populate('lastEditedBy', 'username'); // Don't expose userId
         if (!note) {
             return res.status(404).json({ message: 'Note not found for preview' });
         }
 
         // Fetch all blocks for preview
-        const blocks = await Block.find({ noteId: note._id }).sort({ orderIndex: 1 });
+        const blocks = await Block.find({ note_id: note._id }).sort({ orderIndex: 1 });
 
         res.json({
             ...note.toObject(),
@@ -196,15 +197,16 @@ exports.getNotesByUser = async (req, res) => {
 
 // Helper function to recursively prepare blocks for DB insertion
 const prepareBlocksForDB = (blocks, noteId, parentBlockId = null) => {
+
     return blocks.flatMap((block, index) => {
         const dbBlock = {
-            noteId: noteId,
-            blockId: block.id,
-            parentId: parentBlockId,
+            note_id: noteId,
+            id: block.id,
+            parent_id: parentBlockId,
             type: block.type,
             content: block.content,
             props: block.props,
-            orderIndex: index, // Use index from the array as order within its parent/level
+            order_index: index, // Use index from the array as order within its parent/level
             // children property from BlockNote is usually derived from parentId in DB
             children: block.children ? block.children.map(child => child.id) : [], // Store children IDs for full fidelity if needed
         };
