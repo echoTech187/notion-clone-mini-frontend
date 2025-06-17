@@ -57,7 +57,7 @@ const NoteDetailPage = () => {
             content: [],
             children: [],
         }],
-        uploadFile: handleUploadFile
+        // uploadFile: handleUploadFile
     });
     const saveNoteToBackend = useCallback(async (currentTitle, currentBlocks) => {
         // Pastikan editor sudah diinisialisasi dan ada ID
