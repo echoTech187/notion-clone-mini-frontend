@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import axios from '../../../api/axios';
 import { BlockNoteView } from '@blocknote/mantine';
 import { useCreateBlockNote } from '@blocknote/react';
@@ -10,11 +10,12 @@ import PrivateRoute from '../../../../components/PrivateRouter';
 import { useAuth } from '../../../../context/AuthContext';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import { toast } from 'react-toastify';
 
 const NoteDetailPage = () => {
     const { user } = useAuth();
-    const router = useSearchParams();
-    const { id } = router.get('id') ? JSON.parse(router.get('id')) : useParams();
+    const router = useRouter();
+    const { id } = useParams();
 
     const [note, setNote] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -30,9 +31,10 @@ const NoteDetailPage = () => {
             formData.append('image', file); // 'image' adalah nama field yang akan diterima backend
 
             // Ganti '/api/upload-image' dengan endpoint backend Anda
-            const response = await axios.post('/upload-image', formData, {
+            const response = await axios.post('/doUpload', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${Cookies.get('token')}`
                 },
             });
 
@@ -57,7 +59,7 @@ const NoteDetailPage = () => {
             content: [],
             children: [],
         }],
-        // uploadFile: handleUploadFile
+        uploadFile: handleUploadFile
     });
     const saveNoteToBackend = useCallback(async (currentTitle, currentBlocks) => {
         // Pastikan editor sudah diinisialisasi dan ada ID
@@ -125,7 +127,7 @@ const NoteDetailPage = () => {
                         }
                     }
                 );
-                const result = res.data.data[0];
+                const result = res.data.data;
                 setNote(result);
                 setTitle(result.title);
 
@@ -165,7 +167,7 @@ const NoteDetailPage = () => {
 
         fetchNote();
 
-    }, [id, editor, router, saveNoteToBackend, isSaving]); // Tambahkan editor ke dependensi
+    }, [id, user, editor, router, saveNoteToBackend, isSaving]); // Tambahkan editor ke dependensi
 
     // Effect untuk menangani perubahan judul secara terpisah
     useEffect(() => {
@@ -194,11 +196,17 @@ const NoteDetailPage = () => {
         if (window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
             setError('');
             try {
-                await axios.delete(`/notes/${id}`, {
+                const res = await axios.delete(`/notes/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${Cookies.get('token')}`
                     }
                 });
+                if (res.data.success) {
+                    toast.success('Note deleted successfully!');
+                    router.push('/dashboard');
+                } else {
+                    toast.error(res.message);
+                }
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to delete note');
                 console.error('Error deleting note:', err);
@@ -209,8 +217,8 @@ const NoteDetailPage = () => {
     if (loading) {
         return (
             <Layout title="Loading Note">
-                <div className="flex justify-center items-center h-screen bg-myedlinks-gray-100">
-                    <div className="text-xl font-semibold text-myedlinks-gray-700">Loading note editor...</div>
+                <div className="flex justify-center items-center h-screen bg-gray-100">
+                    <div className="text-xl font-semibold text-gray-700">Loading note editor...</div>
                 </div>
             </Layout>
         );
@@ -230,7 +238,7 @@ const NoteDetailPage = () => {
         return (
             <Layout title="Note Not Found">
                 <div className="p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center">
-                    <p className="text-myedlinks-gray-600 text-xl mb-4">Note not found.</p>
+                    <p className="text-gray-600 text-xl mb-4">Note not found.</p>
                 </div>
             </Layout>
         );
@@ -239,16 +247,16 @@ const NoteDetailPage = () => {
     return (
         <PrivateRoute>
             <Layout title={title || 'Note Detail'}>
-                <div className="relative max-w-screen mx-auto py-4 sm:py-6 md:py-8">
+                <div className="relative max-w-screen mx-auto py-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-0 sm:px-4">
                         <div className="flex space-x-2 sm:space-x-4 items-center justify-end-safe mb-4 sm:mb-0 w-full px-4">
-                            {/* <Link href={`/preview/${id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center btn-secondary py-1 px-2 sm:py-1.5 sm:px-3 text-xs sm:text-sm">
+                            <Link href={`/preview/${id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center btn-secondary py-1 px-2 sm:py-1.5 sm:px-3 text-xs sm:text-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:h-5 sm:w-5 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                                     <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057 .458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                                 </svg>
                                 Preview
-                            </Link> */}
+                            </Link>
                             <button
                                 onClick={handleManualSave}
                                 className="btn-primary py-1 px-2 sm:py-1.5 sm:px-3 text-xs sm:text-sm"
@@ -265,7 +273,7 @@ const NoteDetailPage = () => {
                     </div>
 
                     <div className="px-0 sm:px-4 mb-4 sm:mb-8">
-                        <div className="flex flex-wrap items-center space-x-2 text-myedlinks-gray-500 mb-4 text-sm sm:text-base">
+                        <div className="flex flex-wrap items-center space-x-2 text-gray-500 mb-4 text-sm sm:text-base">
                             <span className="text-xl sm:text-2xl mr-1">📝</span>
                             <span>Add icon</span>
                             <span className="hidden sm:inline">|</span>
@@ -275,7 +283,7 @@ const NoteDetailPage = () => {
                         </div>
                         <input
                             type="text"
-                            className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-myedlinks-gray-800 w-full bg-transparent border-none outline-none resize-none placeholder-myedlinks-gray-400"
+                            className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-800 w-full bg-transparent border-none outline-none resize-none placeholder-gray-400"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Untitled"
@@ -283,7 +291,7 @@ const NoteDetailPage = () => {
                             style={{ overflowY: 'hidden' }}
                         />
                         {note && (
-                            <div className="text-myedlinks-gray-500 text-xs sm:text-sm mt-2">
+                            <div className="text-gray-500 text-xs sm:text-sm mt-2">
                                 Last edited by {note.lastEditedBy.username || 'Unknown'} on{' '}
                                 {new Date(note.lastEditedAt).toLocaleDateString('id-ID', {
                                     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -305,7 +313,7 @@ const NoteDetailPage = () => {
                         )}
                         {/* Opsional: Indikator loading untuk editor itu sendiri */}
                         {!editor && (
-                            <div className="min-h-[200px] flex items-center justify-center text-myedlinks-gray-500 text-base sm:text-lg">
+                            <div className="min-h-[200px] flex items-center justify-center text-gray-500 text-base sm:text-lg">
                                 Initializing editor...
                             </div>
                         )}

@@ -24,20 +24,21 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
                             'Authorization': `Bearer ${Cookies.get('token')}`
                         }
                     });
-                    setNotes(res.data.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+                    setNotes(res.data.data.sort((a, b) => new Date(b.lastEditedAt) - new Date(a.lastEditedAt)));
                 } catch (err) {
-                    setErrorNotes(err.response?.data?.message || 'Failed to fetch notes');
+                    setErrorNotes(err);
                     console.error('Error fetching notes:', err);
+                    return false;
                 } finally {
                     setLoadingNotes(false);
                 }
             };
             fetchNotes();
         } else {
-            setNotes([]);
+
             setLoadingNotes(false);
         }
-    }, [user]);
+    }, [user, router]);
     const createNewNote = async () => {
         try {
             // Generate a random ID for the initial block that BlockNote will create
@@ -51,25 +52,70 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
                     'Authorization': `Bearer ${Cookies.get('token')}`
                 }
             });
+            if (!res.data) return false;
             // Add the new note to the beginning of the list and sort by updatedAt
             setNotes(prevNotes => [{
                 _id: res.data._id,
                 title: res.data.title,
                 updatedAt: res.data.updatedAt,
                 lastEditedBy: res.data.lastEditedBy,
-            }, ...prevNotes].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+            }, ...prevNotes].sort((a, b) => new Date(b.lastEditedAt) - new Date(a.lastEditedAt)));
             router.push(`/notes/${res.data._id}`);
             setIsSidebarOpen(false); // Close sidebar after creating a new note
         } catch (err) {
             console.error('Error creating note from sidebar:', err);
         }
     };
-
+    const setSearchQuery = async (query) => {
+        try {
+            if (query === '') {
+                const res = await axios.get('/notes', {
+                    headers: {
+                        'Authorization': `Bearer ${Cookies.get('token')}`
+                    }
+                });
+                setNotes(res.data.data.sort((a, b) => new Date(b.lastEditedAt) - new Date(a.lastEditedAt)));
+                return;
+            }
+            const encodedQuery = encodeURIComponent(query);
+            const res = await axios.get('/notes?title=' + encodedQuery + '', {
+                headers: {
+                    'Authorization': `Bearer ${Cookies.get('token')}`
+                }
+            });
+            console.log(res.data);
+            setNotes(res.data.data.sort((a, b) => new Date(b.lastEditedAt) - new Date(a.lastEditedAt)));
+        } catch (err) {
+            console.error('Error searching notes:', err);
+        }
+    };
     const truncateTitle = (text, maxLength) => {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     };
-
+    if (loadingNotes) return (
+        <div className="min-h-screen flex flex-col bg-white">
+            <header className="bg-white shadow-sm py-3 px-4 sm:px-6 md:px-8 flex items-center justify-between z-10">
+                <div className="flex items-center">
+                    {showSidebar && (
+                        <button
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="mr-3 p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 lg:hidden"
+                        >
+                            <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                    )}
+                    <Link href="/" className="text-xl font-bold text-blue-600">NotionCloneMini</Link>
+                </div>
+            </header>
+            <div className="flex-1 flex items-center justify-center">
+                <p className="text-gray-700">Loading notes...</p>
+            </div>
+        </div>
+    );
+    if (!user) return null;
     return (
         <div className="min-h-screen flex flex-col bg-white">
             {user && (
@@ -125,6 +171,7 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
                                 type="text"
                                 placeholder="Search..."
                                 className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <nav className="flex-1 px-2 py-4">

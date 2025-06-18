@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(res.data.data);
                 localStorage.setItem('jwtToken', res.data.token);
                 Cookies.set('token', res.data.token);
-                router.push('/dashboard');
+                // router.push('/dashboard');
             } else {
                 setUser(null);
                 localStorage.removeItem('jwtToken');

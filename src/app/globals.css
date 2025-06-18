@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @tailwind utilities;
+@import "@blocknote/mantine/style.css";
 
 /* Custom styles for Quill Editor */
 .quill-editor-container .ql-toolbar {
