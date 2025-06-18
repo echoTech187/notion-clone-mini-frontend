@@ -2,9 +2,9 @@ const Note = require('../models/Note');
 const Block = require('../models/Block');
 
 exports.getNotes = async (req, res) => {
-    console.log(req.user.id);
+
     try {
-        const notes = await Note.find({ userId: req.user.id }).sort({ createAt: -1 }).populate('lastEditedBy', 'username');
+        const notes = await Note.find({ userId: req.user.id, ...req.query, ...req.body, ...req.params }).sort({ createAt: -1 }).populate('lastEditedBy', 'username');
 
         if (!notes) {
             return res.status(404).json({ message: 'Catatan tidak ditemukan.' });
@@ -12,14 +12,12 @@ exports.getNotes = async (req, res) => {
         const block = [];
         await Promise.all(notes.map(async (note) => {
             const blocks = await Block.find({ note_id: note._id }).sort({ order_index: 1 }).select('-__v -_id -note_id');
-            block.push(blocks);
+            block.push(...blocks);
         }));
-        notes.forEach((note, i) => {
-            note.blocks = block[i];
-        });
         res.status(200).json({
             success: true,
-            data: notes
+            data: notes,
+            content: block
         });
     } catch (error) {
         console.log(error);
@@ -29,16 +27,16 @@ exports.getNotes = async (req, res) => {
 
 exports.getNote = async (req, res) => {
     try {
-        const note = await Note.find({ _id: req.params.id, userId: req.user.id }).populate('lastEditedBy', 'username');
+        const note = await Note.findOne({ _id: req.params.id }).populate('lastEditedBy', 'username');
 
         if (!note) {
             return res.status(404).json({ message: 'Catatan tidak ditemukan.' });
         }
-        const blocks = await Block.find({ note_id: note[0]._id }).sort({ order_index: 1 }).select('-__v -_id -note_id');
+        const blocks = await Block.find({ note_id: note._id }).sort({ order_index: 1 }).select('-__v -_id');
         res.status(200).json({
             success: true,
             data: note,
-            content: reconstructBlocksForFrontend(blocks)
+            content: blocks
         });
     } catch (error) {
         console.log(error);
@@ -48,7 +46,7 @@ exports.getNote = async (req, res) => {
 
 exports.createNote = async (req, res) => {
     try {
-        const { initialBlockId } = req.body; // Expect initialBlockId from frontend
+        const { initialBlockId } = req.body;
         const newNote = new Note({
             id: require('uuid').v4(),
             userId: req.user._id,
@@ -62,15 +60,14 @@ exports.createNote = async (req, res) => {
         }
         const initialBlockData = {
             note_id: note._id,
-            id: initialBlockId || 'default-initial-block', // Use ID from frontend or fallback
+            id: initialBlockId,
             parent_id: null,
             type: 'paragraph',
-            content: [], // Empty content for a new paragraph
-            props: {}, // Default props
+            content: [],
+            props: {},
             order_index: 0,
-            children: [], // No children initially
+            children: [],
         };
-        console.log(initialBlockData);
         const initialBlock = await Block.create(initialBlockData);
         if (!initialBlock) {
             return res.status(404).json({ message: 'Initial block not created.' });
@@ -109,17 +106,7 @@ exports.updateNote = async (req, res) => {
             await Block.insertMany(blocksToInsert);
         }
         const updatedBlocks = await Block.find({ note_id: note._id }).sort({ orderIndex: 1 });
-        req.io.to(note._id.toString()).emit('note_updated', {
 
-            note_id: note._id.toString(),
-            updatedNote: {
-                _id: note._id,
-                title: note.title,
-                content: reconstructBlocksForFrontend(updatedBlocks),
-                updatedAt: note.updatedAt,
-                lastEditedBy: note.lastEditedBy,
-            }
-        });
         res.status(200).json({
             success: true,
             message: 'Catatan berhasil diperbarui.',
@@ -138,25 +125,30 @@ exports.updateNote = async (req, res) => {
 
 exports.deleteNote = async (req, res) => {
     try {
-        const note = await Note.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-        if (!note) {
-            res.status(404);
-            throw new Error('Catatan tidak ditemukan.');
+        const findNote = await Note.findOne({ _id: req.params.id }).populate('lastEditedBy', 'username');
+
+        if (!findNote) {
+            res.status(404).json({ message: 'Catatan tidak ditemukan.' });
         }
         // Check if the user is the owner of the note
-        if (note.user.toString() !== req.user.id) {
-            res.status(401);
-            throw new Error('Anda tidak memiliki izin untuk menghapus catatan ini.');
+        if (findNote.userId.toString() !== req.user._id.toString()) {
+            res.status(401).json({ message: 'Anda tidak memiliki izin untuk menghapus catatan ini.' });
         }
 
-        await Block.deleteMany({ noteId: note._id });
+        const deletedNote = await Note.findByIdAndDelete(req.params.id);
+        if (!deletedNote) {
+            return res.status(500).json({ message: 'Catatan Gagal Dihapus.' });
+        } else {
+            const deletedBlocks = await Block.deleteMany({ note_id: req.params.id });
+            if (!deletedBlocks) {
+                return res.status(500).json({ message: 'Blocks Gagal Dihapus.' });
+            }
+            res.status(200).json({
+                success: true,
+                message: 'Catatan berhasil dihapus.'
+            });
+        }
 
-        req.io.emit('note_deleted', note._id.toString());
-        res.status(200).json({
-            success: true,
-            message: 'Catatan berhasil dihapus.',
-            note
-        });
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: 'Server Error' });
@@ -174,7 +166,7 @@ exports.getNoteForPreview = async (req, res) => {
         const blocks = await Block.find({ note_id: note._id }).sort({ orderIndex: 1 });
 
         res.json({
-            ...note.toObject(),
+            data: [note],
             content: reconstructBlocksForFrontend(blocks),
         });
     } catch (error) {

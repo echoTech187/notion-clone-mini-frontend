@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const authRouter = require('./routes/authRouter');
 const noteRouter = require('./routes/noteRouter');
 const previewRouter = require('./routes/previewRouter');
+const fileUploadRouter = require('./routes/fileUploadRouter');
 const middleware = require('./middleware/middleware');
 const http = require('http');
 const cookieParser = require('cookie-parser');
@@ -37,6 +38,8 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
+app.use('assets', express.static('public'));
+app.use('/images', express.static('public/src/images/uploads'));
 
 // Middleware to attach io to req object
 app.use((req, res, next) => {
@@ -158,6 +161,7 @@ app.get('/api', (req, res) => res.send('API running'));
 app.use('/api/auth', authRouter);
 app.use('/api/notes', middleware.protect, noteRouter);
 app.use('/api/preview', previewRouter);
+app.use('/api/doUpload', middleware.protect, fileUploadRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

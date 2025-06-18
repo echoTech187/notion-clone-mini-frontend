@@ -8,9 +8,7 @@ const blockSchema = new mongoose.Schema({
     },
     note_id: {
         type: mongoose.Schema.ObjectId,
-        ref: 'Note',
-        required: true,
-        unique: false
+
     },
     parent_id: {
         type: String,
