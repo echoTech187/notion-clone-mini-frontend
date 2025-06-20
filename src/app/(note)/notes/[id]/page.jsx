@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from '../../../api/axios';
 import { BlockNoteView } from '@blocknote/mantine';
+import Editor from '../../../../hooks/useBlockNoteEditor';
 import { useCreateBlockNote } from '@blocknote/react';
 import "@blocknote/core/style.css";
 import Layout from '../../../../components/Layout';
@@ -53,12 +54,7 @@ const NoteDetailPage = () => {
     }, []);
     // Inisialisasi editor menggunakan useCreateBlockNote
     const editor = useCreateBlockNote({
-        initialContent: [{
-            type: 'paragraph',
-            props: {},
-            content: [],
-            children: [],
-        }],
+        initialContent: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
         uploadFile: handleUploadFile
     });
     const saveNoteToBackend = useCallback(async (currentTitle, currentBlocks) => {
@@ -128,7 +124,7 @@ const NoteDetailPage = () => {
                     }
                 );
                 const result = res.data.data;
-                setNote(result);
+
                 setTitle(result.title);
 
                 let loadedBlocks = [];
@@ -154,6 +150,7 @@ const NoteDetailPage = () => {
                 isUpdatingEditorRef.current = true;
                 editor.replaceBlocks(editor.document, loadedBlocks); // Ganti semua blok yang ada dengan blok yang dimuat
 
+                setNote(result);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to fetch note');
                 console.error('Error fetching note:', err);
@@ -303,13 +300,7 @@ const NoteDetailPage = () => {
                     <div className="blocknote-editor-wrapper mx-auto w-full px-0 sm:px-4">
                         {/* Render BlockNoteView hanya jika instance editor tersedia */}
                         {editor && (
-                            <BlockNoteView
-                                editor={editor}
-                                onChange={handleEditorContentChange}
-                                className="blocknote-editor"
-                                style={{ width: '100%', height: 'auto' }}
-                                placeholder="Write something..."
-                            />
+                            <BlockNoteView editor={editor} editable={true} />
                         )}
                         {/* Opsional: Indikator loading untuk editor itu sendiri */}
                         {!editor && (

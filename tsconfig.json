@@ -38,7 +38,8 @@
     "src/app/pages/login/page.js",
     "next.config.mjs",
     "src/app/(note)/preview/[id]/page.jsx",
-    "src/app/(note)/preview/[id]/page.jsx"
+    "src/app/(note)/preview/[id]/page.jsx",
+    "src/components/useBlockNoteEditor.jsx"
   ],
   "exclude": [
     "node_modules"

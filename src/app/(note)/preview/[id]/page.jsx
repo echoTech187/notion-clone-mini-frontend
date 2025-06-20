@@ -1,8 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { BlockNoteView } from '@blocknote/mantine';
-import { useCreateBlockNote } from '@blocknote/react';
+import Editor from '../../../../hooks/useBlockNoteEditor';
 import axios from '../../../api/axios';
 import PreviewLayout from '../../../../components/PreviewLayout';
 import PrivateRouter from '../../../../components/PrivateRouter';
@@ -17,17 +16,9 @@ const PreviewPage = () => {
     const [error, setError] = useState('');
     const [parsedContent, setParsedContent] = useState([{ type: 'paragraph', content: 'Loading...' }]);
 
-    const editor = useCreateBlockNote(
-        {
-            initialContent: parsedContent,
-            editable: false,
-            readOnly: true,
-        }
-    )
-
     useEffect(() => {
 
-        const fetchNoteForPreview = async () => {
+        async function fetchNoteForPreview() {
             try {
                 const res = await axios.get(`/preview/${id}`);
 
@@ -39,18 +30,18 @@ const PreviewPage = () => {
                     } else if (Array.isArray(res.data.content)) {
                         loadedBlocks = res.data.content;
                     } else {
-                        console.warn("Note content is not in expected BlockNote array format for preview:", res.data.content);
+                        console.log("Note content is not in expected BlockNote array format for preview:", res.data.content);
                         loadedBlocks = [{ type: 'paragraph', content: 'Failed to load preview content.' }];
                     }
                 } catch (parseError) {
-                    console.error("Error parsing note content for preview:", parseError);
+                    console.log("Error parsing note content for preview:", parseError);
                     loadedBlocks = [{ type: 'paragraph', content: 'Error loading preview content.' }];
                 }
                 setParsedContent(loadedBlocks);
                 setNote(res.data.data);
             } catch (err) {
                 setError(err || 'Failed to fetch note preview');
-                console.error('Error fetching note preview:', err);
+                console.log('Error fetching note preview:', err);
             } finally {
                 setLoading(false);
             }
@@ -58,7 +49,7 @@ const PreviewPage = () => {
         fetchNoteForPreview();
 
 
-    }, [id, note, parsedContent, editor]);
+    }, [id]);
 
 
     if (loading) {
@@ -138,8 +129,8 @@ const PreviewPage = () => {
                                 )}
                             </div>
 
-                            {editor ? <div className="blocknote-editor-wrapper bg-white mx-auto w-full px-0 sm:px-4">
-                                <BlockNoteView editor={editor} theme={'light'} readOnly={true} />
+                            {!loading ? <div className="blocknote-editor-wrapper bg-white mx-auto w-full px-0 sm:px-4">
+                                <Editor content={parsedContent} editable={false} />
                             </div> :
                                 <div className='min-h-screen'>
                                     Loading...

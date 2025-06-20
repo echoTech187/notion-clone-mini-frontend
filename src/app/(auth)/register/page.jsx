@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import AuthForm from '../../../components/AuthForm';
-import Layout from '../../../components/Layout'; // Import Layout component
+import AuthLayout from '../../../components/AuthLayout'; // Import Layout component
 import { useAuth } from '../../../context/AuthContext';
 import Link from 'next/link';
 
@@ -19,7 +19,7 @@ const RegisterPage = () => {
 
     return (
         // Layout component without sidebar for auth pages
-        <Layout title="Register" showSidebar={false}>
+        <AuthLayout title="Register" showSidebar={false}>
             <div className="flex flex-col lg:flex-row min-h-screen bg-white">
                 {/* Left Section (Illustration) */}
                 <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-8 bg-blue-50 relative overflow-hidden">
@@ -55,11 +55,10 @@ const RegisterPage = () => {
                         {/* AuthForm component for the register logic */}
                         <AuthForm type="register" onSubmit={handleRegister} />
 
-
                     </div>
                 </div>
             </div>
-        </Layout>
+        </AuthLayout>
     );
 };
 

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import api from '../app/api/axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
@@ -71,12 +72,31 @@ export const AuthProvider = ({ children }) => {
                 setUser(res.data.user);
                 Cookies.set('token', res.data.token);
                 localStorage.setItem('jwtToken', res.data.token);
+                toast.success('Selamat datang kembali , ' + res.data.user.name, 'Login berhasil', {
+                    position: "top-right",
+                    autoClose: true,
+                    hideProgressBar: false,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colored",
+                });
                 router.push('/dashboard');
                 return { success: true };
             }
             return { success: false, message: 'Login gagal.' };
         } catch (err) {
-            console.error('Login error:', err.response?.data?.message || err.message);
+            toast.error('Login error:' + err.message || 'Login gagal.', {
+                position: "top-right",
+                autoClose: true,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colored",
+            });
             return { success: false, message: err.response?.data?.message || 'Login gagal.' };
         }
     };
@@ -85,13 +105,42 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/register', { username, email, password });
             if (res.data.success) {
+                toast.success('Logout berhasil', {
+                    position: "top-right",
+                    autoClose: true,
+                    hideProgressBar: false,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colored",
+                });
                 router.push('/login');
 
                 return { success: true };
             }
+            toast.error('Registrasi gagal, Silahkan cek kembali data anda', {
+                position: "top-right",
+                autoClose: true,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colored",
+            });
             return { success: false, message: 'Registrasi gagal.' };
         } catch (err) {
-            console.error('Register error:', err.response?.data?.message || err.message);
+            toast.error('Registrasi error:' + err.message || 'Registrasi gagal.', {
+                position: "top-right",
+                autoClose: true,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colored",
+            });
             return { success: false, message: err.response?.data?.message || 'Registrasi gagal.' };
         }
     };
@@ -106,10 +155,29 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             localStorage.removeItem('jwtToken');
             Cookies.remove('token');
+            toast.success('Logout berhasil', {
+                position: "top-right",
+                autoClose: true,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colored",
+            });
             router.push('/login');
             return { success: true };
         } catch (err) {
-            console.error('Logout error:', err.response?.data?.message || err.message);
+            toast.error('Logout Gagal error:' + err.message || 'Logout gagal.', {
+                position: "top-right",
+                autoClose: true,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colored",
+            });
             return { success: false, message: 'Logout gagal.' };
         }
     };

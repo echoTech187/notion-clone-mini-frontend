@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import AuthForm from '../../../components/AuthForm';
-import Layout from '../../../components/Layout'; // Import Layout component
+import AuthLayout from '../../../components/AuthLayout'; // Import Layout component
 import { useAuth } from '../../../context/AuthContext';
 import Link from 'next/link';
 
@@ -19,7 +19,7 @@ const LoginPage = () => {
 
     return (
         // Layout component without sidebar for auth pages
-        <Layout title="Login" showSidebar={false}>
+        <AuthLayout title="Login" showSidebar={false}>
             <div className="flex flex-col lg:flex-row min-h-screen bg-white">
                 {/* Left Section (Illustration) */}
                 <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-8 bg-blue-50 relative overflow-hidden">
@@ -44,7 +44,7 @@ const LoginPage = () => {
                                 Hai, selamat datang kembali
                             </h2>
                             <p className="text-gray-600 text-sm">
-                                Baru di notionClonemMini?{' '}
+                                Baru di NotionCloneMini?{' '}
                                 <Link href="/register" className="text-blue-600 hover:underline">
                                     Daftar Gratis
                                 </Link>
@@ -56,10 +56,11 @@ const LoginPage = () => {
                         <AuthForm type="login" onSubmit={handleLogin} />
 
 
+
                     </div>
                 </div>
             </div>
-        </Layout>
+        </AuthLayout>
     );
 };
 
