@@ -16,5 +16,5 @@ export default function Editor(content, editable = true, handleUploadFile) {
     editor.editable = editable;
 
     // Renders the editor instance using a React component.
-    return <BlockNoteView editor={editor} editable={editable} />;
+    return <BlockNoteView editor={editor} editable={editable} theme={'light'} />;
 }

@@ -78,6 +78,7 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
                 return;
             }
             const encodedQuery = encodeURIComponent(query);
+            console.log(encodedQuery)
             const res = await axios.get('/notes?title=' + encodedQuery + '', {
                 headers: {
                     'Authorization': `Bearer ${Cookies.get('token')}`
@@ -177,12 +178,12 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
                         <nav className="flex-1 px-2 py-4">
                             <button
                                 onClick={createNewNote}
-                                className="w-full flex items-center px-2 py-2 text-gray-700 rounded-md hover:bg-gray-200 mb-2 text-sm"
+                                className="w-full flex items-center px-2 py-2 text-gray-700 rounded-md hover:bg-gray-200 mb-2 text-sm cursor-pointer"
                             >
                                 <svg className="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
-                                New Page
+                                Create New Note
                             </button>
                             {loadingNotes ? (
                                 <div className="px-2 py-2 text-sm text-gray-500">Loading notes...</div>
@@ -194,7 +195,7 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
                                 <ul>
                                     {notes.map(note => (
                                         <li key={note._id}>
-                                            <Link href={`/notes/${note._id}`} className="flex items-center px-2 py-2 text-gray-700 rounded-md hover:bg-gray-200 text-sm">
+                                            <Link href={`/notes/${note._id}`} className="flex items-center px-2 py-2 text-gray-700 rounded-md hover:bg-gray-200 text-sm cursor-pointer">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>

@@ -103,43 +103,41 @@ const PreviewPage = () => {
 
         return (
             <>
-                <PrivateRouter>
-                    <PreviewLayout title={`Preview: ${note[0].title}`}>
-                        <div className="relative max-w-screen mx-auto py-4 sm:py-6 md:py-8">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-0 sm:px-4">
-                                <Link href={`/notes/${id}`} className="btn-secondary mb-4 sm:mb-0">
-                                    &larr; Back to Editor
-                                </Link>
-                                <Link href="/" className="btn-primary">
-                                    Go to Dashboard
-                                </Link>
-                            </div>
-
-                            <div className="px-0 sm:px-4 mb-4 sm:mb-8">
-                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-800 w-full bg-transparent border-none outline-none resize-none placeholder-gray-400">
-                                    {note[0].title}
-                                </h1>
-                                {note[0].lastEditedBy && (
-                                    <div className="text-gray-500 text-xs sm:text-sm mt-2">
-                                        Last edited by {note[0].lastEditedBy.username || 'Unknown'} on{' '}
-                                        {new Date(note[0].lastEditedAt).toLocaleDateString('id-ID', {
-                                            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-
-                            {!loading ? <div className="blocknote-editor-wrapper bg-white mx-auto w-full px-0 sm:px-4">
-                                <Editor content={parsedContent} editable={false} />
-                            </div> :
-                                <div className='min-h-screen'>
-                                    Loading...
-                                </div>
-                            }
-
+                <PreviewLayout title={`Preview: ${note[0].title}`}>
+                    <div className="relative max-w-screen mx-auto py-4 sm:py-6 md:py-8">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-0 sm:px-4">
+                            <Link href={`/notes/${id}`} className="btn-secondary mb-4 sm:mb-0">
+                                &larr; Back to Editor
+                            </Link>
+                            <Link href="/" className="btn-primary">
+                                Go to Dashboard
+                            </Link>
                         </div>
-                    </PreviewLayout>
-                </PrivateRouter>
+
+                        <div className="px-0 sm:px-4 mb-4 sm:mb-8">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-800 w-full bg-transparent border-none outline-none resize-none placeholder-gray-400">
+                                {note[0].title}
+                            </h1>
+                            {note[0].lastEditedBy && (
+                                <div className="text-gray-500 text-xs sm:text-sm mt-2">
+                                    Last edited by {note[0].lastEditedBy.username || 'Unknown'} on{' '}
+                                    {new Date(note[0].lastEditedAt).toLocaleDateString('id-ID', {
+                                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {!loading ? <div className="blocknote-editor-wrapper bg-white mx-auto w-full px-0 sm:px-4">
+                            <Editor content={parsedContent} editable={false} />
+                        </div> :
+                            <div className='min-h-screen'>
+                                Loading...
+                            </div>
+                        }
+
+                    </div>
+                </PreviewLayout>
             </>
         );
     }

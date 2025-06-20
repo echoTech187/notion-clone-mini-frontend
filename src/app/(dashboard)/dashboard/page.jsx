@@ -30,14 +30,7 @@ const HomePage = () => {
                         <p className="text-xl text-myedlinks-gray-600 text-center mb-8 max-w-2xl">
                             This is your personalized workspace. Start organizing your thoughts, notes, and projects.
                         </p>
-                        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                            <button
-                                onClick={() => router.push('/notes')}
-                                className="btn-primary py-3 px-6 text-lg"
-                            >
-                                Create New Note
-                            </button>
-                        </div>
+
                     </div>
                 </Layout>
             </PrivateRoute>
