@@ -115,7 +115,7 @@ const Layout = ({ children, title = 'NotionCloneMini', showSidebar = true }) => 
             </div>
         </div>
     );
-    if (!user) return null;
+    // if (!user || title !== 'Login' || title !== 'Register') return null;
     return (
         <div className="min-h-screen flex flex-col bg-white">
             {user && (
