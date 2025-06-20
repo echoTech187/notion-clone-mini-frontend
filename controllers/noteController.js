@@ -4,8 +4,13 @@ const Block = require('../models/Block');
 exports.getNotes = async (req, res) => {
 
     try {
-        const notes = await Note.find({ userId: req.user.id, ...req.query, ...req.body, ...req.params }).sort({ createAt: -1 }).populate('lastEditedBy', 'username');
-
+        const { title } = req.query;
+        let notes = [];
+        if (title !== '') {
+            notes = await Note.find({ userId: req.user.id, title: new RegExp(req.query.title, 'i') }).sort({ createAt: -1 }).populate('lastEditedBy', 'username');
+        } else {
+            notes = await Note.find({ userId: req.user.id, ...req.query, ...req.body, ...req.params }).sort({ createAt: -1 }).populate('lastEditedBy', 'username');
+        }
         if (!notes) {
             return res.status(404).json({ message: 'Catatan tidak ditemukan.' });
         }
@@ -21,7 +26,7 @@ exports.getNotes = async (req, res) => {
         });
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: error.message || 'Server Error' });
     }
 };
 
@@ -198,9 +203,8 @@ const prepareBlocksForDB = (blocks, noteId, parentBlockId = null) => {
             type: block.type,
             content: block.content,
             props: block.props,
-            order_index: index, // Use index from the array as order within its parent/level
-            // children property from BlockNote is usually derived from parentId in DB
-            children: block.children ? block.children.map(child => child.id) : [], // Store children IDs for full fidelity if needed
+            order_index: index,
+            children: block.children ? block.children.map(child => child.id) : [],
         };
 
         let childBlocks = [];
@@ -210,23 +214,7 @@ const prepareBlocksForDB = (blocks, noteId, parentBlockId = null) => {
         return [dbBlock, ...childBlocks];
     });
 };
-
-// Helper function to reconstruct BlockNote format from DB blocks
-// This takes a flat list of blocks from DB and prepares them for BlockNoteView's `initialContent` or `replaceBlocks`
 const reconstructBlocksForFrontend = (dbBlocks) => {
-    // BlockNote expects 'id', 'type', 'props', 'content', 'children'
-    // 'id' should map to our 'blockId' from DB
-    // 'children' needs to be an array of BlockNote block objects if we are building the full tree.
-    // However, for `editor.replaceBlocks`, a flat list of blocks (where nested items
-    // are correctly linked via their `parent` prop within their `props` object
-    // as BlockNote internally expects for list items etc.) is usually sufficient.
-    // Given the current `Block.js` schema, `children` in DB refers to a list of child BlockIDs,
-    // which then needs to be re-assembled into the actual block objects.
-    // For simplicity, we'll assume BlockNote handles the hierarchy with a flat list
-    // where `props.parent` (for e.g. list items) is crucial.
-    // If you need full tree reconstruction on the backend, this function becomes more complex.
-
-    // A simpler approach for `replaceBlocks` is to ensure correct `id` and other properties are set.
     return dbBlocks.map(b => ({
         id: b.blockId,
         type: b.type,
